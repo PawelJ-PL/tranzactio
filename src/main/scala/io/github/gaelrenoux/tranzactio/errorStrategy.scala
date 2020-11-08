@@ -88,9 +88,9 @@ case class ErrorStrategy(
 ) {
 
   def apply[R, A](z: ZIO[R, DbException, A]): ZIO[R with Clock with Blocking, DbException, A] =
-    z
+    z.uninterruptible // don't interrupt, we might lose a connection!
       .timeoutFail(DbException.Timeout(timeout))(timeout)
-      .retry(retrySchedule)
+      .retry(retrySchedule).uninterruptible // don't interrupt, we might lose a connection!
       .timeoutFail(DbException.Timeout(retryTimeout))(retryTimeout)
 
   def noTimeout: ErrorStrategy = copy(timeout = Duration.Infinity, retryTimeout = Duration.Infinity)
